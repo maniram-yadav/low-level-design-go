@@ -26,17 +26,17 @@ func (um *UserManager) AddUser(user *User) {
 	um.mu.Lock()
 	defer um.mu.Unlock()
 	um.Users[user.Id] = user
-	fmt.Printf("User %d with name %s added", user.Id, user.Name)
+	fmt.Printf("\nUser %d with name %s added", user.Id, user.Name)
 }
 
 func (um *UserManager) GetUserById(userId int) (*User, error) {
 	um.mu.RLock()
 	defer um.mu.RUnlock()
-	user, err := um.Users[userId]
-	if err {
+	user, ok := um.Users[userId]
+	if !ok {
 		return nil, fmt.Errorf("user not found")
 	}
-	fmt.Printf("user with id %d received", userId)
+	fmt.Printf("\nUser with id %d fetched", userId)
 	return user, nil
 }
 
@@ -50,8 +50,8 @@ func (um *UserManager) RemoveUser(userId int) {
 func (um *UserManager) UpdateUser(user *User) (*User, error) {
 	um.mu.Lock()
 	defer um.mu.Unlock()
-	user, err := um.Users[user.Id]
-	if err {
+	user, ok := um.Users[user.Id]
+	if !ok {
 		return nil, fmt.Errorf("user not found")
 	}
 	um.Users[user.Id] = user
@@ -60,8 +60,6 @@ func (um *UserManager) UpdateUser(user *User) (*User, error) {
 }
 
 func (um *UserManager) AddFriend(requesterid int, receiverid int) error {
-	um.mu.Lock()
-	defer um.mu.Unlock()
 	requester, err1 := um.GetUserById(requesterid)
 	receiver, err2 := um.GetUserById(receiverid)
 
@@ -74,6 +72,9 @@ func (um *UserManager) AddFriend(requesterid int, receiverid int) error {
 		fmt.Printf("Receiving User does not exists")
 		return err2
 	}
+	um.mu.Lock()
+	defer um.mu.Unlock()
+
 	receiver.AddFriends(requester)
 	requester.AddFriends(receiver)
 	fmt.Printf("Friendship added between %d an %d", receiverid, receiverid)

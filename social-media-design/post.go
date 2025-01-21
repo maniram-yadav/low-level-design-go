@@ -70,7 +70,7 @@ func (post *Post) AddLike() {
 	post.Likes += 1
 }
 
-func (post *Post) getLikes() int {
+func (post *Post) GetLikes() int {
 	post.mu.RLock()
 	defer post.mu.RUnlock()
 	return post.Likes
@@ -115,4 +115,8 @@ func (post *Post) UnPublishPost() {
 
 func (post *Post) UpdateContent(content string) {
 	post.Content = content
+}
+
+func (post *Post) IsPostPublished() bool {
+	return post.IsPublished
 }

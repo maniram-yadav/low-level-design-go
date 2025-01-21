@@ -36,4 +36,5 @@ func (nm *Notificationmanager) GetNotifications(userid int) ([]*Notification, er
 func (nm *Notificationmanager) AddNotification(userid int, notType NotificationType, message string) {
 	notification := &Notification{UserId: userid, Content: message, Type: notType, Id: fmt.Sprintf("Notification.%d", time.Now().UnixMicro())}
 	nm.notification[userid] = append(nm.notification[userid], notification)
+	fmt.Printf("\nNotification Added for user %d\n", userid)
 }
