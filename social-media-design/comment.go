@@ -1,14 +1,12 @@
 package main
 
-import "fmt"
-
 type Comment struct {
-	Id     int
-	PostId int
-	text   string
+	Id      int
+	PostId  int
+	Content string
+	User    *User
 }
 
-func main() {
-	fmt.Println("Social media Platform")
-
+func NewComment(id int, postId int, content string, user *User) *Comment {
+	return &Comment{Id: id, PostId: postId, Content: content, User: user}
 }
