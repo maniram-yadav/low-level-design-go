@@ -12,13 +12,13 @@ const (
 )
 
 type Notification struct {
-	Id      int
+	Id      string
 	Content string
 	Type    NotificationType
 	UserId  int
 }
 
-func NewNotification(userid int, content string, notType NotificationType, id int) *Notification {
-	notification := &Notification{Id: id, Content: content, Type: notType, UserId: id}
+func NewNotification(userid int, content string, notType NotificationType, id string) *Notification {
+	notification := &Notification{Id: id, Content: content, Type: notType, UserId: userid}
 	return notification
 }
