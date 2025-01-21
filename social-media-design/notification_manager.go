@@ -8,7 +8,7 @@ import (
 
 var (
 	notificationmanagerInstance *Notificationmanager
-	syncOnce                    sync.Once
+	notificationOnce            sync.Once
 )
 
 type Notificationmanager struct {
@@ -17,7 +17,7 @@ type Notificationmanager struct {
 }
 
 func GetNotificationmanagerInstance() *Notificationmanager {
-	syncOnce.Do(func() {
+	notificationOnce.Do(func() {
 		notificationmanagerInstance = &Notificationmanager{notification: make(map[int][]*Notification)}
 	})
 	return notificationmanagerInstance
