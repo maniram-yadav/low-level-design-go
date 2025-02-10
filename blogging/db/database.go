@@ -1,6 +1,7 @@
 package db
 
 import (
+	"lld/blogging/model"
 	"log"
 	"sync"
 
@@ -25,6 +26,6 @@ func initDB() *gorm.DB {
 	if err != nil {
 		log.Fatal("failed to connec with DB", err)
 	}
-	db.AutoMigrate(&mode.User{}, &model.Blog{}, &model.Comment{}, &model.Subscription{})
+	db.AutoMigrate(&model.User{}, &model.Blog{}, &model.Comment{}, &model.Subscription{})
 	return db
 }
