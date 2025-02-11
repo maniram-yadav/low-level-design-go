@@ -14,7 +14,7 @@ var (
 	once sync.Once
 )
 
-func initDB() *gorm.DB {
+func InitDB() *gorm.DB {
 	dsn := "host=localhost user=postgres password=postgres dbname=blogging port=5000 sslmode=disable TimeZone=Asia/Shanghai"
 	var err error
 
