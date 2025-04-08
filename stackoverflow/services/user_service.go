@@ -39,3 +39,34 @@ func (s *UserService) Register(username, email, passwrod string) (*models.User, 
 	}
 	return user,err
 }
+
+func (u *UserService) Login(email,password string) (*models.User,error) {
+
+	user , err := u.userRepo.FindByEmail(email)
+	if err != nil {
+		return nil,errors.New("Invalid credentials")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash),[]byte(password));
+	err!=nil {
+		return nil,error.New("Invalid credentials")
+	}
+
+	return user,nil
+
+}
+
+
+func (u *UserService) UpdateReputation(userId uint,delta int) error {
+
+	user , err := u.userRepo.FindByID(userId)
+	if err != nil {
+		return err
+	}
+	user.Reputation = delta
+	if user.Reputation < 1 {
+		user.Reputation = 1
+	}
+	return s.userRepo.Update(user)
+}
+
