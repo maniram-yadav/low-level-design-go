@@ -24,42 +24,40 @@ func (s *UserService) Register(username, email, passwrod string) (*models.User, 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(passwrod), bcrypt.DefaultCost)
 
 	if err != nil {
-		return nil,err
-	
+		return nil, err
+
 	}
 	user := &models.User{
-		Username: username,
-		Email: email,
+		Username:     username,
+		Email:        email,
 		PasswordHash: string(hashed),
-		Reputation: 1
+		Reputation:   1,
 	}
 
-	if err := s.userRepo.Create(user);err!=nil {
-		return nil,err
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, err
 	}
-	return user,err
+	return user, err
 }
 
-func (u *UserService) Login(email,password string) (*models.User,error) {
+func (u *UserService) Login(email, password string) (*models.User, error) {
 
-	user , err := u.userRepo.FindByEmail(email)
+	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return nil,errors.New("Invalid credentials")
+		return nil, errors.New("Invalid credentials")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash),[]byte(password));
-	err!=nil {
-		return nil,error.New("Invalid credentials")
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return nil, errors.New("Invalid credentials")
 	}
 
-	return user,nil
+	return user, nil
 
 }
 
+func (u *UserService) UpdateReputation(userId uint, delta int) error {
 
-func (u *UserService) UpdateReputation(userId uint,delta int) error {
-
-	user , err := u.userRepo.FindByID(userId)
+	user, err := u.userRepo.FindByID(userId)
 	if err != nil {
 		return err
 	}
@@ -67,6 +65,5 @@ func (u *UserService) UpdateReputation(userId uint,delta int) error {
 	if user.Reputation < 1 {
 		user.Reputation = 1
 	}
-	return s.userRepo.Update(user)
+	return u.userRepo.Update(user)
 }
-
