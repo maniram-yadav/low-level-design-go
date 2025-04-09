@@ -12,7 +12,7 @@ type AuthController struct {
 }
 
 func NewAuthController(userService services.UserService) *AuthController {
-	return &AuthHandler{userService: userService}
+	return &AuthController{userService: &userService}
 }
 
 func (h *AuthController) Register(c *gin.Context) {
