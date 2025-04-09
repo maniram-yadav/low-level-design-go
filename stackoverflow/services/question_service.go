@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"lld/stackoverflow/models"
 	"lld/stackoverflow/repositories"
 )
@@ -57,4 +58,34 @@ func (s *QuestionService) GetQuestion(id uint) (*models.Question, error) {
 	_ = s.questionRepo.Update(question)
 
 	return question, nil
+}
+
+func (s *QuestionService) VoteQuestion(userID, questionID uint, value int) error {
+	if value != 1 && value != -1 {
+		return errors.New("invalid vote value")
+	}
+
+	question, err := s.questionRepo.FindById(questionID)
+	if err != nil {
+		return err
+	}
+
+	if question.UserID == userID {
+		return errors.New("cannot vote on your own question")
+	}
+
+	question.VoteCount += value
+	if err := s.questionRepo.Update(question); err != nil {
+		return err
+	}
+
+	repDelta := 5
+	if value == -1 {
+		repDelta = -2
+	}
+	return s.userRepo.UpdateReputation(question.UserID, repDelta)
+}
+
+func (s *QuestionService) Search(query string) ([]models.Question, error) {
+	return s.questionRepo.Search(query)
 }
