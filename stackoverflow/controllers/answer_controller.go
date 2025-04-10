@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"lld/stackoverflow/services"
 	"net/http"
-	"stackoverflow/services"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,7 @@ type AnswerController struct {
 }
 
 func NewAnswerController(answerService *services.AnswerService) *AnswerController {
-	return &AnswerController{answerService: answerService}
+	return &AnswerController{answerService}
 }
 
 func (h *AnswerController) PostAnswer(c *gin.Context) {
