@@ -96,3 +96,60 @@ func (h *QuestionController) SearchQuestions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, questions)
 }
+
+func (h *QuestionController) UpdateQuestion(c *gin.Context) {
+	userID := c.GetUint("userID")
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid question ID"})
+		return
+	}
+
+	var input struct {
+		Title string `json:"title" binding:"required"`
+		Body  string `json:"body" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.questionService.UpdateQuestion(userID, uint(id), input.Title, input.Body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "question updated"})
+}
+
+func (h *QuestionController) DeleteQuestion(c *gin.Context) {
+	userID := c.GetUint("userID")
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid question ID"})
+		return
+	}
+
+	if err := h.questionService.DeleteQuestion(userID, uint(id)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "question deleted"})
+}
+
+func (h *QuestionController) ListQuestions(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	questions, err := h.questionService.ListQuestions(page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, questions)
+}
