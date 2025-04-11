@@ -42,9 +42,10 @@ func main() {
 
 	r := gin.Default()
 
-	ansController := &controllers.AnswerController{answerService}
-	authController := &controllers.AuthController{answerService}
-	questionController := &controllers.QuestionController{questionService}
+	ansController := controllers.NewAnswerController(answerService)
+	authController := controllers.NewAuthController(userService)
+	questionController := controllers.NewQuestionController{questionService}
+
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
 

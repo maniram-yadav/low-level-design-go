@@ -141,7 +141,7 @@ func (r *TagRepository) DeleteTag(tagID uint) error {
 	}()
 
 	// Delete tag associations first
-	if err := tx.Where("tag_id = ?", tagID).Delete(&models.QuestionTag{}).Error; err != nil {
+	if err := tx.Where("tag_id = ?", tagID).Delete(&models.Tag{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
