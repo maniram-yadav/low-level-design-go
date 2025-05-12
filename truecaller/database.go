@@ -45,6 +45,25 @@ func (db *InMemoryDB) GetUserByID(ctx context.Context, id string) (*User, error)
 	return copyUser(user), nil
 }
 
+func (db *InMemoryDB) GetUserByPhone(ctx context.Context, phone *PhoneNumber) (*User, error) {
+	return nil, nil
+}
+func (db *InMemoryDB) GetContact(ctx context.Context, phone *PhoneNumber) (*Contact, error) {
+	return nil, nil
+}
+func (db *InMemoryDB) SaveUser(ctx context.Context, user *User) error {
+	return nil
+}
+func (db *InMemoryDB) SaveContact(ctx context.Context, contact *Contact) error {
+	return nil
+}
+func (db *InMemoryDB) IncrementSpamCount(ctx context.Context, phone *PhoneNumber) error {
+	return nil
+}
+func (db *InMemoryDB) GetSpamCount(ctx context.Context, phone *PhoneNumber) (int, error) {
+	return 0, nil
+}
+
 func copyUser(user *User) *User {
 
 	contactCopy := make(map[string]*Contact)
