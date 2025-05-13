@@ -1,6 +1,9 @@
 package truecaller
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Contact struct {
 	Name         string
@@ -9,4 +12,5 @@ type Contact struct {
 	IsSpam       bool
 	SpamCount    int
 	LastUpdated  time.Time
+	sync.Mutex
 }

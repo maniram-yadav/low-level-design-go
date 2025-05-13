@@ -3,6 +3,7 @@ package truecaller
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 type TrueCallerService struct {
@@ -50,12 +51,61 @@ func (t *TrueCallerService) getUser(ctx context.Context, userID string) (*User, 
 	t.userCache.Store(userID, user)
 	return user, nil
 }
+
+
 func (t *TrueCallerService) ReportSpam(ctx context.Context, userID string, phone *PhoneNumber) error {
+	
+	user, err := t.getUser(userID)
+
+	if err!=nil {
+		return err
+	}
+	
+	user.Lock()
+	if _,exists := user.SpamReports[phone.String()]; exists {
+		user.Unlock()
+		return ErrSpamReportExists
+	}
+
+	user.SpamReports[phone.String()] = true
+	user.Unlock()
+	
+	if err := t.db.IncrementSpamCount(ctx,phone); err !=nil {
+		return err
+	}
+
+	user.RLock()
+	contact , exist := user.Contacts[phone.String()]
+	user.RUnlock()
+
+	if exist {
+		contact.Lock()
+		contact.IsSpam = true
+		contact.SpamCount++
+		contact.LastUpdated = time.Now()
+		contact.Unlock()
+		return t.db.SaveContact(ctx,contact)
+	}
+
 	return nil
+
 }
 
+
 func (t *TrueCallerService) BlockNumber(ctx context.Context, userID string, phone *PhoneNumber) error {
-	return nil
+	
+	user, err := t.getUser(userID)
+
+	if err!=nil {
+		return errors.New("user not exists")
+	}
+	
+	user.Lock()
+	user.Blocked[phone.String()] = true
+	user.Unlock()
+	
+	return t.db.SaveUser(user)
+
 }
 
 
