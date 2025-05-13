@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -285,5 +286,108 @@ func NewTrueCallerServiceWithInMemoryDB() *TrueCallerService {
 		rateLimiter:     NewRateLimiter(100, time.Minute),
 		carrierService:  &CustomCarrierService{},
 		locationService: &CusomLocationService{},
+	}
+}
+
+func TestSearchNumber(t *testing.T) {
+	service := NewTrueCallerServiceWithInMemoryDB()
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		userID   string
+		phone    *PhoneNumber
+		wantName string
+		wantErr  bool
+	}{
+		{
+			name:     "Search known contact",
+			userID:   "user1",
+			phone:    &PhoneNumber{countryCode: "+91", number: "5551234567"},
+			wantName: "Charlie",
+			wantErr:  false,
+		},
+		{
+			name:     "Search unknown number",
+			userID:   "user1",
+			phone:    &PhoneNumber{countryCode: "+1", number: "1231231234"},
+			wantName: "",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := service.SearchNumber(ctx, tt.userID, tt.phone)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchNumber() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got.Name != tt.wantName {
+				t.Errorf("SearchNumber() name = %v, want %v", got.Name, tt.wantName)
+			}
+		})
+	}
+}
+
+func TestSearchName(t *testing.T) {
+	service := NewTrueCallerServiceWithInMemoryDB()
+	ctx := context.Background()
+
+	// Add some more contacts for testing
+	service.AddContact(ctx, "user1", &Contact{
+		Name: "Alice",
+		PhoneNumbers: []*PhoneNumber{
+			{countryCode: "+1", number: "1112223333"},
+		},
+	})
+	service.AddContact(ctx, "user1", &Contact{
+		Name: "Alice",
+		PhoneNumbers: []*PhoneNumber{
+			{countryCode: "+1", number: "4445556666"},
+		},
+	})
+
+	tests := []struct {
+		name       string
+		userID     string
+		searchName string
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:       "Search single match",
+			userID:     "user1",
+			searchName: "Charlie",
+			wantCount:  1,
+			wantErr:    false,
+		},
+		{
+			name:       "Search multiple matches",
+			userID:     "user1",
+			searchName: "Alice",
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name:       "Search no matches",
+			userID:     "user1",
+			searchName: "Nonexistent",
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := service.SearchName(ctx, tt.userID, tt.searchName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(results) != tt.wantCount {
+				t.Errorf("SearchName() count = %d, want %d", len(results), tt.wantCount)
+			}
+		})
 	}
 }
