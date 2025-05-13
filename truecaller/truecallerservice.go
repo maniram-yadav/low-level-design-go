@@ -18,7 +18,71 @@ type TrueCallerService struct {
 }
 
 func (t *TrueCallerService) IdentifyCaller(ctx context.Context, userID string, callerNumber *PhoneNumber) (*CallerInfo, error) {
-	return nil,nil
+	
+	if allow := t.rateLimiter.Allow(userID); !allow {
+		return nil,errors.New("rate limit exceeded")
+	}
+
+	user,err = t.getUser(userID)
+	if err!=nil {
+		return nil,err
+	}
+	user.RLock()
+	_,isBlocked:=user.Blocked[callerNumber.String()]
+	user.RUnlock()
+	if isBlocked {
+		return &CallerInfo{
+			PhoneNumber: callerNumber,
+			IsBlocked: true,
+			Time: time.Now(),
+		},nil
+	}
+	user.RLock()
+	contact , isContact := user.Contacts[callerNumber.String()]
+	user.RUnlock()
+	if isContact {
+
+		carrier , _ := t.carrierService.GetCarrier(callerNumber)
+		location , _ := t.locationService.GetLocation(callerNumber)
+		return &CallerInfo{
+			PhoneNumber: callerNumber,
+			Name:        contact.Name,
+			IsContact:   true,
+			IsSpam:      contact.IsSpam,
+			SpamScore:   contact.SpamCount,
+			Carrier:     carrier,
+			Location:    location,
+			Time:        time.Now(),
+		},nil
+	}
+	globalContact ,err := t.getContact(ctx,callerNumber)
+	if err != nil && !errors.Is(err,ErrNumberNotFound){ 
+			return nil,err
+	}
+	
+	spamCount , err := t.db.GetSpamCount(ctx,callerNumber)
+	if err!=nil && !errors.Is(err,ErrNumberNotFound) {
+		return nil,err
+	}
+
+	carrier := t.carrierService.GetCarrier(callerNumber)
+	location := t.locationService.GetLocation(callerNumber)
+
+	return &CallerInfo{
+		PhoneNumber: callerNumber,
+		Name: func() string {
+			if globalContact != nil {
+				return globalContact.Name
+			}
+			return ""
+		}(),
+		IsSpam: spamCount>=t.spamThreshold,
+		SpamScore: spamCount,
+		Carrier: carrier,
+		Location: location,
+		Time: time.Now(),
+	},nil
+	
 }
 
 func (t *TrueCallerService) AddContact(ctx context.Context,userId string,contact *Contact) error {
