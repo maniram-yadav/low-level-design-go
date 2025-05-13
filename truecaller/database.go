@@ -75,16 +75,57 @@ func (db *InMemoryDB) GetContact(ctx context.Context, phone *PhoneNumber) (*Cont
 }
 
 func (db *InMemoryDB) SaveUser(ctx context.Context, user *User) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	// Store the user
+	db.users[user.ID] = copyUser(user)
+
+	// Update phone mapping
+	if user.PhoneNumber != nil {
+		db.usersByPhone[user.PhoneNumber.String()] = user.ID
+	}
+
 	return nil
 }
+
 func (db *InMemoryDB) SaveContact(ctx context.Context, contact *Contact) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	// Store contact against all its phone numbers
+	c := copyContact(contact)
+	for _, phone := range contact.PhoneNumbers {
+		db.contacts[phone.String()] = c
+	}
+
 	return nil
 }
+
 func (db *InMemoryDB) IncrementSpamCount(ctx context.Context, phone *PhoneNumber) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	phoneStr := phone.String()
+	db.spamCounts[phoneStr]++
+
+	if contact, exists := db.contacts[phoneStr]; exists {
+		contact.SpamCount = db.spamCounts[phoneStr]
+		contact.IsSpam = contact.SpamCount >= 3 // Example threshold
+	}
+
 	return nil
 }
 func (db *InMemoryDB) GetSpamCount(ctx context.Context, phone *PhoneNumber) (int, error) {
-	return 0, nil
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	count, exists := db.spamCounts[phone.String()]
+	if !exists {
+		return 0, ErrNumberNotFound
+	}
+
+	return count, nil
 }
 
 func copyUser(user *User) *User {
