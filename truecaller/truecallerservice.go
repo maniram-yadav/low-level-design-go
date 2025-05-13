@@ -2,6 +2,7 @@ package truecaller
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 )
@@ -88,7 +89,6 @@ func (t *TrueCallerService) ReportSpam(ctx context.Context, userID string, phone
 	}
 
 	return nil
-
 }
 
 
@@ -137,6 +137,40 @@ func (t *TrueCallerService) SearchNumber(ctx context.Context, userID string, pho
 }
 
 func (t *TrueCallerService) SearchName(ctx context.Context, userID, name string) ([]*CallerInfo, error) {
-	return nil,nil
+	
+	if !t.rateLimiter.Allow(userID) {
+		return err,errors.New("rate limit exceeded")
+	}
+
+	
+	user,err := t.getUser(ctx,userID)
+	if err!=nil {
+		return nil,err
+	}
+
+	var results []*CallerInfo
+	user.Lock()
+	defer user.Unlock()
+
+	for _,contact := range user.Contacts {
+		if contact.Name == name {
+			for _,phone := range contact.PhoneNumbers {
+				carrier , _ := t.carrierService.GetCarrier(phone)
+				location , _ := t.locationService.GetLocation(phone)
+
+				results = append(results,&CallerInfo{
+					PhoneNumber: phone,
+					Name: name,
+					IsContact: true,
+					IsSpam: contact.IsSpam,
+					SpamScore: contact.SpamCount,
+					Carrier: carrier,
+					Location: location,
+				})
+			}
+		}
+	}
+
+	return results,nil
 }
 
