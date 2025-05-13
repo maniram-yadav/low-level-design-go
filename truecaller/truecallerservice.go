@@ -15,6 +15,9 @@ type TrueCallerService struct {
 	locationService LocationService
 }
 
+func (t *TrueCallerService) IdentifyCaller(ctx context.Context, userID string, callerNumber *PhoneNumber) (*CallerInfo, error) {
+	return nil,nil
+}
 
 func (t *TrueCallerService) AddContact(ctx context.Context,userId string,contact *Contact) error {
 	user,err := t.getUser(ctx,userId)
@@ -47,3 +50,43 @@ func (t *TrueCallerService) getUser(ctx context.Context, userID string) (*User, 
 	t.userCache.Store(userID, user)
 	return user, nil
 }
+func (t *TrueCallerService) ReportSpam(ctx context.Context, userID string, phone *PhoneNumber) error {
+	return nil
+}
+
+func (t *TrueCallerService) BlockNumber(ctx context.Context, userID string, phone *PhoneNumber) error {
+	return nil
+}
+
+
+func (t *TrueCallerService) getContact(ctx context.Context, phone *PhoneNumber) (*Contact, error) {
+	
+	phoneNumber := phone.String()
+	if cached,ok := t.contactCache.Load(phoneNumber); ok {
+		return cached.(*Contact),nil
+	}  
+
+	contact , err := t.db.GetContact(ctx,phone)
+	if err != nil {
+		return nil,err
+	}
+
+	t.contactCache.Store(phoneNumber,contact)
+	return contact,nil	
+}
+
+
+func (t *TrueCallerService) SearchNumber(ctx context.Context, userID string, phone *PhoneNumber) (*CallerInfo, error) { 
+	
+	if !t.rateLimiter.Allow(userID) {
+		return nil,error.new("rate limit exceeded")
+	}
+	
+	return t.IdentifyCaller(ctx,userID,phone)
+
+}
+
+func (t *TrueCallerService) SearchName(ctx context.Context, userID, name string) ([]*CallerInfo, error) {
+	return nil,nil
+}
+
