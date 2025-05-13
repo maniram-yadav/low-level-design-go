@@ -391,3 +391,74 @@ func TestSearchName(t *testing.T) {
 		})
 	}
 }
+
+func TestRateLimiting(t *testing.T) {
+	service := NewTrueCallerServiceWithInMemoryDB()
+	ctx := context.Background()
+	phone := &PhoneNumber{countryCode: "+1", number: "1234567890"}
+
+	for i := 0; i < 100; i++ {
+		_, err := service.IdentifyCaller(ctx, "user1", phone)
+		if err != nil {
+			t.Errorf("RateLimiter failed too early on request %d: %v", i+1, err)
+		}
+	}
+
+	_, err := service.IdentifyCaller(ctx, "user1", phone)
+	if err == nil {
+		t.Error("RateLimiter should have blocked the 101st request")
+	}
+
+	_, err = service.IdentifyCaller(ctx, "user2", phone)
+	if err != nil {
+		t.Error("RateLimiter blocked the wrong user")
+	}
+}
+
+func TestConcurrentAccess(t *testing.T) {
+	service := NewTrueCallerServiceWithInMemoryDB()
+	ctx := context.Background()
+	phone := &PhoneNumber{countryCode: "+1", number: "1231231234"}
+	userID := "user1"
+
+	const numWorkers = 50
+
+	errChan := make(chan error, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		go func(id int) {
+			var err error
+
+			switch id % 4 {
+			case 0:
+				_, err = service.IdentifyCaller(ctx, userID, phone)
+			case 1:
+				err = service.ReportSpam(ctx, userID, phone)
+			case 2:
+				err = service.BlockNumber(ctx, userID, phone)
+			case 3:
+				_, err = service.SearchNumber(ctx, userID, phone)
+			}
+
+			errChan <- err
+		}(i)
+	}
+
+	for i := 0; i < numWorkers; i++ {
+		err := <-errChan
+		if err != nil && err != ErrSpamReportExists {
+			t.Errorf("Unexpected error in concurrent operation: %v", err)
+		}
+	}
+
+	// Verify final state
+	user, _ := service.db.GetUserByID(ctx, userID)
+	if _, blocked := user.Blocked[phone.String()]; !blocked {
+		t.Error("Expected number to be blocked after concurrent access")
+	}
+
+	count, _ := service.db.GetSpamCount(ctx, phone)
+	if count < 1 {
+		t.Error("Expected spam count to be incremented after concurrent access")
+	}
+}
