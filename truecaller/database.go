@@ -41,16 +41,39 @@ func (db *InMemoryDB) GetUserByID(ctx context.Context, id string) (*User, error)
 		return nil, ErrUserNotFound
 	}
 
-	// Return a copy to prevent external modifications
 	return copyUser(user), nil
 }
 
 func (db *InMemoryDB) GetUserByPhone(ctx context.Context, phone *PhoneNumber) (*User, error) {
-	return nil, nil
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	userID, exists := db.usersByPhone[phone.String()]
+	if !exists {
+		return nil, ErrUserNotFound
+	}
+
+	user, exists := db.users[userID]
+	if !exists {
+		return nil, ErrUserNotFound
+	}
+
+	return copyUser(user), nil
 }
+
 func (db *InMemoryDB) GetContact(ctx context.Context, phone *PhoneNumber) (*Contact, error) {
-	return nil, nil
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	contact, exists := db.contacts[phone.String()]
+	if !exists {
+		return nil, ErrNumberNotFound
+	}
+
+	// Return a copy to prevent external modifications
+	return copyContact(contact), nil
 }
+
 func (db *InMemoryDB) SaveUser(ctx context.Context, user *User) error {
 	return nil
 }
