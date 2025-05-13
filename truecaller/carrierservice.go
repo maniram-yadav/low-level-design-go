@@ -3,10 +3,10 @@ package truecaller
 type CarrierService interface {
 	GetCarrier(phone *PhoneNumber) (string, error)
 }
-type RandomCarrier struct{}
+type CustomCarrierService struct{}
 
-func (c *RandomCarrier) GetCarrier(phone *PhoneNumber) (string, error) {
-	// Simple mock - in reality this would call an external API
+func (c *CustomCarrierService) GetCarrier(phone *PhoneNumber) (string, error) {
+
 	prefix := phone.number[:3]
 	switch prefix {
 	case "123":

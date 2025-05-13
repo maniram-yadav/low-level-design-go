@@ -4,9 +4,9 @@ type LocationService interface {
 	GetLocation(phone *PhoneNumber) (string, error)
 }
 
-type CusomLocation struct{}
+type CusomLocationService struct{}
 
-func (m *CusomLocation) GetLocation(phone *PhoneNumber) (string, error) {
+func (m *CusomLocationService) GetLocation(phone *PhoneNumber) (string, error) {
 	prefix := phone.countryCode
 	switch prefix {
 	case "+1":
